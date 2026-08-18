@@ -90,6 +90,19 @@ def word_from_code(code, answers):
     return answers[int(digest, 16) % len(answers)]
 
 
+def resolve_date(date_arg, today):
+    """Return the ISO date string to play, or raise ValueError with a message."""
+    if not date_arg:
+        return today.isoformat()
+    try:
+        target = datetime.date.fromisoformat(date_arg)
+    except ValueError:
+        raise ValueError(f"invalid date '{date_arg}', use YYYY-MM-DD")
+    if target > today:
+        raise ValueError("can't play a future puzzle (no spoilers!)")
+    return target.isoformat()
+
+
 def fetch_puzzle(date):
     """Return (solution, puzzle_number) for the given date."""
     url = ENDPOINT.format(date=date)
@@ -324,6 +337,11 @@ def main(argv=None):
         "or omit it to get a new code to share",
     )
     parser.add_argument(
+        "--date",
+        metavar="YYYY-MM-DD",
+        help="play a past day's puzzle instead of today's",
+    )
+    parser.add_argument(
         "--hard",
         action="store_true",
         help="hard mode: revealed hints must be reused in later guesses",
@@ -357,11 +375,15 @@ def main(argv=None):
     if args.practice is not None:
         return run_practice(args.practice, show_keyboard, load_words(), args.hard, style)
 
-    date = datetime.date.today().isoformat()
+    try:
+        date = resolve_date(args.date, datetime.date.today())
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 2
     try:
         solution, number = fetch_puzzle(date)
     except Exception as exc:  # network / parsing issues
-        print(f"Couldn't fetch today's word: {exc}", file=sys.stderr)
+        print(f"Couldn't fetch the puzzle for {date}: {exc}", file=sys.stderr)
         return 1
 
     if args.solve:

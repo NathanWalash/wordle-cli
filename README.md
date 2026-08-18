@@ -83,6 +83,7 @@ wordle --solve               # reveal today's answer, then exit
 | Flag | Effect |
 | --- | --- |
 | `--practice [CODE]` | Play offline; share the printed code, or pass a friend's code |
+| `--date YYYY-MM-DD` | Play a past day's puzzle |
 | `--hard` | Revealed greens must stay in place and yellows must be reused |
 | `-n`, `--no-keyboard` | Hide the letter tracker |
 | `--no-color` | Disable colour (also honours the `NO_COLOR` env var) |

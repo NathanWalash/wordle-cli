@@ -1,10 +1,13 @@
 """Tests for wordle-cli scoring and guess validation (no network needed)."""
 
+import datetime
+
 import pytest
 
 from wordle import __version__
 from wordle.cli import (
     main,
+    resolve_date,
     score,
     is_valid_guess,
     hard_mode_error,
@@ -191,3 +194,26 @@ def test_default_palette_is_green_yellow():
     style = make_style(no_color=False, colorblind=False)
     assert "\033[42" in render_guess("a", ["green"], style)   # green bg
     assert "\033[43" in render_guess("a", ["yellow"], style)  # yellow bg
+
+
+# --- date resolution ---
+
+TODAY = datetime.date(2026, 8, 18)
+
+
+def test_resolve_date_defaults_to_today():
+    assert resolve_date(None, TODAY) == "2026-08-18"
+
+
+def test_resolve_date_accepts_past():
+    assert resolve_date("2022-01-01", TODAY) == "2022-01-01"
+
+
+def test_resolve_date_rejects_future():
+    with pytest.raises(ValueError):
+        resolve_date("2099-01-01", TODAY)
+
+
+def test_resolve_date_rejects_bad_format():
+    with pytest.raises(ValueError):
+        resolve_date("18-08-2026", TODAY)
