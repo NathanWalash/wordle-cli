@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org).
 
+## [1.6.0] — 2026-08-18
+
+### Added
+- Config file at `~/.config/wordle/config.ini` (honours `XDG_CONFIG_HOME`) to set
+  defaults for `hard`, `colorblind`, `color`, and `keyboard`. Command-line flags
+  still take precedence.
+
 ## [1.5.0] — 2026-08-18
 
 ### Added
@@ -54,6 +61,7 @@ First release.
 - Installable as a `wordle` command via `pipx` / `pip`.
 - Test suite and GitHub Actions CI across Python 3.9–3.12.
 
+[1.6.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.6.0
 [1.5.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.5.0
 [1.4.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.4.0
 [1.3.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.3.0

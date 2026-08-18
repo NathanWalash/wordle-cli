@@ -8,6 +8,7 @@ from wordle import __version__
 from wordle.cli import (
     main,
     resolve_date,
+    load_config,
     score,
     is_valid_guess,
     hard_mode_error,
@@ -217,3 +218,32 @@ def test_resolve_date_rejects_future():
 def test_resolve_date_rejects_bad_format():
     with pytest.raises(ValueError):
         resolve_date("18-08-2026", TODAY)
+
+
+# --- config file ---
+
+def test_load_config_maps_all_keys(tmp_path):
+    p = tmp_path / "config.ini"
+    p.write_text("[wordle]\nhard = true\ncolorblind = yes\ncolor = false\nkeyboard = off\n")
+    assert load_config(str(p)) == {
+        "hard": True,
+        "colorblind": True,
+        "no_color": True,      # color=false -> no_color=true
+        "no_keyboard": True,   # keyboard=off -> no_keyboard=true
+    }
+
+
+def test_load_config_partial(tmp_path):
+    p = tmp_path / "config.ini"
+    p.write_text("[wordle]\nhard = true\n")
+    assert load_config(str(p)) == {"hard": True}
+
+
+def test_load_config_missing_file_is_empty():
+    assert load_config("/no/such/file.ini") == {}
+
+
+def test_load_config_without_section_is_empty(tmp_path):
+    p = tmp_path / "config.ini"
+    p.write_text("[other]\nhard = true\n")
+    assert load_config(str(p)) == {}

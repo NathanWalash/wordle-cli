@@ -119,6 +119,21 @@ Wordle 1,234 4/6
 🟩🟩🟩🟩🟩
 ```
 
+## Configuration
+
+Set defaults so you don't retype flags. Create `~/.config/wordle/config.ini`
+(or `$XDG_CONFIG_HOME/wordle/config.ini`):
+
+```ini
+[wordle]
+hard = false
+colorblind = false
+color = true
+keyboard = true
+```
+
+Command-line flags always override the config file.
+
 ## How it works
 
 The daily answer is read from NYT's public puzzle endpoint —

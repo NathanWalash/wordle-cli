@@ -8,6 +8,7 @@ code so friends get the same word.
 """
 
 import argparse
+import configparser
 import datetime
 import hashlib
 import json
@@ -88,6 +89,45 @@ def word_from_code(code, answers):
     """Deterministically map a share code to a word, unrelated to the code itself."""
     digest = hashlib.sha256(normalize_code(code).encode()).hexdigest()
     return answers[int(digest, 16) % len(answers)]
+
+
+# Config keys -> (argparse dest, invert?). e.g. color=false means no_color=true.
+CONFIG_KEYS = {
+    "hard": ("hard", False),
+    "colorblind": ("colorblind", False),
+    "color": ("no_color", True),
+    "keyboard": ("no_keyboard", True),
+}
+
+
+def config_path():
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(
+        os.path.expanduser("~"), ".config"
+    )
+    return os.path.join(base, "wordle", "config.ini")
+
+
+def load_config(path):
+    """Read [wordle] settings into argparse defaults. Returns {} if unavailable."""
+    if not path or not os.path.isfile(path):
+        return {}
+    parser = configparser.ConfigParser()
+    try:
+        parser.read(path)
+    except configparser.Error:
+        return {}
+    if not parser.has_section("wordle"):
+        return {}
+    section = parser["wordle"]
+    defaults = {}
+    for key, (dest, invert) in CONFIG_KEYS.items():
+        if key in section:
+            try:
+                value = section.getboolean(key)
+            except ValueError:
+                continue
+            defaults[dest] = (not value) if invert else value
+    return defaults
 
 
 def resolve_date(date_arg, today):
@@ -368,6 +408,8 @@ def main(argv=None):
         action="store_true",
         help="high-contrast colours (blue/orange instead of green/yellow)",
     )
+    # Config file supplies defaults; explicit CLI flags still win.
+    parser.set_defaults(**load_config(config_path()))
     args = parser.parse_args(argv)
     show_keyboard = not args.no_keyboard
     style = make_style(color_disabled(args.no_color), args.colorblind)
