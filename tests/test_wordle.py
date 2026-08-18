@@ -177,3 +177,17 @@ def test_color_disabled_by_flag():
 def test_color_disabled_by_env(monkeypatch):
     monkeypatch.setenv("NO_COLOR", "1")
     assert color_disabled(False) is True
+
+
+def test_colorblind_palette_uses_blue_and_orange():
+    style = make_style(no_color=False, colorblind=True)
+    green_tile = render_guess("a", ["green"], style)
+    yellow_tile = render_guess("a", ["yellow"], style)
+    assert "48;5;33" in green_tile     # blue background
+    assert "48;5;208" in yellow_tile   # orange background
+
+
+def test_default_palette_is_green_yellow():
+    style = make_style(no_color=False, colorblind=False)
+    assert "\033[42" in render_guess("a", ["green"], style)   # green bg
+    assert "\033[43" in render_guess("a", ["yellow"], style)  # yellow bg

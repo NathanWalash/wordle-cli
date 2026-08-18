@@ -36,6 +36,12 @@ GREEN = "\033[42;30m"
 YELLOW = "\033[43;30m"
 GRAY = "\033[100;97m"
 BG = {"green": GREEN, "yellow": YELLOW, "gray": GRAY}
+# Colourblind palette: blue = correct, orange = present (Wordle's high-contrast set).
+CB_BG = {
+    "green": "\033[48;5;33;38;5;231m",
+    "yellow": "\033[48;5;208;38;5;16m",
+    "gray": GRAY,
+}
 # Keyboard keys: two greys only — used (dark) vs unused (light).
 KEY_USED = "\033[100;97m"
 KEY_UNUSED = "\033[47;30m"
@@ -158,8 +164,8 @@ def color_disabled(flag):
     return not sys.stdout.isatty()
 
 
-def make_style(no_color):
-    return {"plain": no_color, "bg": dict(BG)}
+def make_style(no_color, colorblind=False):
+    return {"plain": no_color, "bg": CB_BG if colorblind else dict(BG)}
 
 
 def tile(ch, mark, style):
@@ -339,9 +345,14 @@ def main(argv=None):
         action="store_true",
         help="disable colour (also honours the NO_COLOR env var)",
     )
+    parser.add_argument(
+        "--colorblind",
+        action="store_true",
+        help="high-contrast colours (blue/orange instead of green/yellow)",
+    )
     args = parser.parse_args(argv)
     show_keyboard = not args.no_keyboard
-    style = make_style(color_disabled(args.no_color))
+    style = make_style(color_disabled(args.no_color), args.colorblind)
 
     if args.practice is not None:
         return run_practice(args.practice, show_keyboard, load_words(), args.hard, style)

@@ -86,6 +86,7 @@ wordle --solve               # reveal today's answer, then exit
 | `--hard` | Revealed greens must stay in place and yellows must be reused |
 | `-n`, `--no-keyboard` | Hide the letter tracker |
 | `--no-color` | Disable colour (also honours the `NO_COLOR` env var) |
+| `--colorblind` | High-contrast blue/orange tiles |
 | `--hint` | First letter plus vowel and unique-letter counts, then exit |
 | `--solve` | Print the answer and exit |
 | `--version` | Print the version and exit |
