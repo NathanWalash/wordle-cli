@@ -30,4 +30,4 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-wordle = ["words.txt"]
+wordle = ["words.txt", "answers.txt"]

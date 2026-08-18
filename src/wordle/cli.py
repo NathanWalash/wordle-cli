@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """wordle-cli — play the day's NYT Wordle in your terminal.
 
-No accounts, no browser tab. The answer is fetched from NYT's public puzzle
-endpoint (the same JSON your browser downloads before you guess).
+No accounts, no browser tab. The daily answer is fetched from NYT's public
+puzzle endpoint (the same JSON your browser downloads before you guess).
+Practice mode plays offline from a bundled word list and can be shared with a
+code so friends get the same word.
 """
 
 import argparse
 import datetime
+import hashlib
 import json
+import random
 import sys
 import urllib.request
 from collections import Counter
@@ -16,6 +20,10 @@ from importlib import resources
 WORD_LEN = 5
 MAX_GUESSES = 6
 ENDPOINT = "https://www.nytimes.com/svc/wordle/v2/{date}.json"
+
+# Share codes: unambiguous alphabet (no 0/O/1/I/L).
+CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+CODE_LEN = 6
 
 # ANSI styling.
 RESET = "\033[0m"
@@ -34,14 +42,39 @@ KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm")
 KEYBOARD_INDENT = ("", " ", "   ")  # staggered like a real keyboard
 
 
-def load_words():
-    """Return the set of valid guess words, or None if unavailable."""
+def _load_list(filename):
     try:
-        text = resources.files("wordle").joinpath("words.txt").read_text()
+        text = resources.files("wordle").joinpath(filename).read_text()
     except (FileNotFoundError, ModuleNotFoundError, OSError):
         return None
     words = {w.strip().lower() for w in text.split() if w.strip()}
     return words or None
+
+
+def load_words():
+    """Set of valid guess words (~15k), or None if unavailable."""
+    return _load_list("words.txt")
+
+
+def load_answers():
+    """Sorted list of curated answer words for practice, or None."""
+    answers = _load_list("answers.txt") or load_words()
+    return sorted(answers) if answers else None
+
+
+def normalize_code(code):
+    """Uppercase and keep only alphabet chars, so 'k7q2-mx' == 'K7Q2MX'."""
+    return "".join(c for c in code.upper() if c in CODE_ALPHABET)
+
+
+def generate_code(length=CODE_LEN):
+    return "".join(random.choice(CODE_ALPHABET) for _ in range(length))
+
+
+def word_from_code(code, answers):
+    """Deterministically map a share code to a word, unrelated to the code itself."""
+    digest = hashlib.sha256(normalize_code(code).encode()).hexdigest()
+    return answers[int(digest, 16) % len(answers)]
 
 
 def fetch_solution(date):
@@ -104,9 +137,9 @@ def keyboard_lines(used):
     return lines
 
 
-def draw(history, used, show_keyboard, date):
+def draw(history, used, show_keyboard, header):
     """Redraw the whole board, with the keyboard panel to its right."""
-    lines = [CLEAR, f"  Wordle · {date}", ""]
+    lines = [CLEAR, f"  {header}", ""]
     kb = keyboard_lines(used) if show_keyboard else []
     kb_start = (MAX_GUESSES - len(KEYBOARD_ROWS)) // 2  # vertically centre it
 
@@ -129,13 +162,13 @@ def make_hint(solution):
     )
 
 
-def play(solution, date, show_keyboard, words):
+def play(solution, header, show_keyboard, words):
     history = []       # list of (guess, marks)
     used = set()       # letters guessed so far
     notice = ""
 
     while len(history) < MAX_GUESSES:
-        draw(history, used, show_keyboard, date)
+        draw(history, used, show_keyboard, header)
         if notice:
             print(f"  {notice}")
             notice = ""
@@ -159,18 +192,42 @@ def play(solution, date, show_keyboard, words):
         used.update(guess)
 
         if guess == solution:
-            draw(history, used, show_keyboard, date)
+            draw(history, used, show_keyboard, header)
             print(f"  Got it in {len(history)}! ")
             return 0
 
-    draw(history, used, show_keyboard, date)
+    draw(history, used, show_keyboard, header)
     print(f"  Out of guesses. The word was: {solution.upper()}")
     return 0
+
+
+def run_practice(code_arg, show_keyboard, words):
+    answers = load_answers()
+    if not answers:
+        print("No word list available for practice.", file=sys.stderr)
+        return 1
+
+    code = normalize_code(code_arg) if code_arg else ""
+    if not code:
+        code = generate_code()
+
+    solution = word_from_code(code, answers)
+    print(f"\n  Practice — share this code so others get the same word:  {code}\n")
+    return play(solution, f"Practice · {code}", show_keyboard, words)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="wordle", description="Play the day's NYT Wordle in your terminal."
+    )
+    parser.add_argument(
+        "--practice",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="CODE",
+        help="play an offline word; pass a shared CODE to match a friend, "
+        "or omit it to get a new code to share",
     )
     parser.add_argument(
         "--solve", action="store_true", help="reveal today's answer and exit"
@@ -185,6 +242,10 @@ def main(argv=None):
         help="hide the QWERTY letter tracker (shown by default)",
     )
     args = parser.parse_args(argv)
+    show_keyboard = not args.no_keyboard
+
+    if args.practice is not None:
+        return run_practice(args.practice, show_keyboard, load_words())
 
     date = datetime.date.today().isoformat()
     try:
@@ -200,7 +261,7 @@ def main(argv=None):
         print(make_hint(solution))
         return 0
 
-    return play(solution, date, show_keyboard=not args.no_keyboard, words=load_words())
+    return play(solution, f"Wordle · {date}", show_keyboard, load_words())
 
 
 if __name__ == "__main__":

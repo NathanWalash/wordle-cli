@@ -12,6 +12,12 @@
   No browser tab, no accounts, no dependencies. Just Python 3.
 </p>
 
+<p align="center">
+  <a href="https://github.com/NathanWalash/wordle-cli/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/NathanWalash/wordle-cli/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.9%2B-blue">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+</p>
+
 ---
 
 ```
@@ -34,6 +40,7 @@ light = unused, dark = already tried.*
 
 - 🎯 Plays **today's real Wordle** — the answer comes straight from NYT's public
   puzzle feed.
+- 👥 **Practice mode with shareable codes** — race a friend on the same word.
 - ⌨️ Live **QWERTY tracker** beside the board showing used vs unused letters.
 - 📖 **Real-word validation** against a bundled ~15k word list.
 - 🎨 Clean ANSI colours, no emoji tiles.
@@ -75,9 +82,25 @@ your feedback and an updated tracker.
 
 | Flag | Effect |
 | --- | --- |
+| `--practice [CODE]` | Play offline; share the printed code, or pass a friend's code |
 | `-n`, `--no-keyboard` | Hide the letter tracker |
 | `--hint` | First letter + vowel/unique-letter counts, then exit |
 | `--solve` | Print the answer and exit |
+
+## Play with a friend
+
+Practice mode plays a word offline (no daily puzzle needed) and gives you a
+short code. Anyone who runs the same code gets the **same word**, so you can
+race each other:
+
+```sh
+wordle --practice            # prints e.g. "code K7Q2MX" and starts a game
+wordle --practice K7Q2MX     # a friend runs your code -> same word
+```
+
+The code is deliberately **unrelated to the word** — it's mapped through a hash,
+so seeing the code tells you nothing about the answer. Codes are case- and
+dash-insensitive (`k7q2-mx` works too).
 
 ## How it works
 
