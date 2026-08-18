@@ -13,9 +13,9 @@ No browser tab, no accounts, no dependencies — just Python 3.</p>
 
 <p>
   <a href="https://github.com/NathanWalash/wordle-cli/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/NathanWalash/wordle-cli/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/nyt-wordle-cli/"><img alt="PyPI" src="https://img.shields.io/pypi/v/nyt-wordle-cli"></a>
-  <img alt="Python" src="https://img.shields.io/pypi/pyversions/nyt-wordle-cli">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="https://pypi.org/project/nyt-wordle-cli/"><img alt="PyPI" src="https://img.shields.io/pypi/v/nyt-wordle-cli.svg"></a>
+  <a href="https://pypi.org/project/nyt-wordle-cli/"><img alt="Python" src="https://img.shields.io/badge/python-3.9%2B-blue.svg"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
 </p>
 
 </div>
