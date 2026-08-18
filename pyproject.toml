@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wordle-cli"
+version = "1.0.0"
+description = "Play the day's NYT Wordle in your terminal — no browser, no dependencies."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["wordle", "cli", "game", "terminal"]
+classifiers = [
+    "Environment :: Console",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Games/Entertainment :: Puzzle Games",
+]
+
+[project.scripts]
+wordle = "wordle.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/NathanWalash/wordle-cli"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+wordle = ["words.txt"]

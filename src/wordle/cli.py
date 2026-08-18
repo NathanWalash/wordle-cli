@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """wordle-cli — play the day's NYT Wordle in your terminal.
 
-No dependencies, no browser tab. The answer is fetched from NYT's public
-puzzle endpoint (the same JSON your browser downloads before you guess).
+No accounts, no browser tab. The answer is fetched from NYT's public puzzle
+endpoint (the same JSON your browser downloads before you guess).
 """
 
 import argparse
@@ -11,6 +11,7 @@ import json
 import sys
 import urllib.request
 from collections import Counter
+from importlib import resources
 
 WORD_LEN = 5
 MAX_GUESSES = 6
@@ -25,12 +26,22 @@ YELLOW = "\033[43;30m"
 GRAY = "\033[100;97m"
 BG = {"green": GREEN, "yellow": YELLOW, "gray": GRAY}
 # Keyboard keys: two greys only — used (dark) vs unused (light).
-KEY_USED = "\033[100;97m"   # dark grey bg, light text
-KEY_UNUSED = "\033[47;30m"  # light grey bg, dark text
+KEY_USED = "\033[100;97m"
+KEY_UNUSED = "\033[47;30m"
 
 CLEAR = "\033[2J\033[3J\033[H"
 KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm")
 KEYBOARD_INDENT = ("", " ", "   ")  # staggered like a real keyboard
+
+
+def load_words():
+    """Return the set of valid guess words, or None if unavailable."""
+    try:
+        text = resources.files("wordle").joinpath("words.txt").read_text()
+    except (FileNotFoundError, ModuleNotFoundError, OSError):
+        return None
+    words = {w.strip().lower() for w in text.split() if w.strip()}
+    return words or None
 
 
 def fetch_solution(date):
@@ -62,6 +73,15 @@ def score(guess, solution):
             remaining[ch] -= 1
 
     return result
+
+
+def is_valid_guess(guess, words, solution):
+    """A guess is valid if it's the right shape and a known word (or the answer)."""
+    if len(guess) != WORD_LEN or not guess.isalpha():
+        return False
+    if words is None:
+        return True  # no word list available -> accept any 5-letter word
+    return guess in words or guess == solution
 
 
 def render_guess(guess, marks):
@@ -109,7 +129,7 @@ def make_hint(solution):
     )
 
 
-def play(solution, date, show_keyboard):
+def play(solution, date, show_keyboard, words):
     history = []       # list of (guess, marks)
     used = set()       # letters guessed so far
     notice = ""
@@ -130,6 +150,9 @@ def play(solution, date, show_keyboard):
         if len(guess) != WORD_LEN or not guess.isalpha():
             notice = f"...enter a {WORD_LEN}-letter word."
             continue
+        if not is_valid_guess(guess, words, solution):
+            notice = f"...'{guess}' is not in the word list."
+            continue
 
         marks = score(guess, solution)
         history.append((guess, marks))
@@ -145,8 +168,10 @@ def play(solution, date, show_keyboard):
     return 0
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Play the day's NYT Wordle.")
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="wordle", description="Play the day's NYT Wordle in your terminal."
+    )
     parser.add_argument(
         "--solve", action="store_true", help="reveal today's answer and exit"
     )
@@ -159,7 +184,7 @@ def main():
         action="store_true",
         help="hide the QWERTY letter tracker (shown by default)",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     date = datetime.date.today().isoformat()
     try:
@@ -175,7 +200,7 @@ def main():
         print(make_hint(solution))
         return 0
 
-    return play(solution, date, show_keyboard=not args.no_keyboard)
+    return play(solution, date, show_keyboard=not args.no_keyboard, words=load_words())
 
 
 if __name__ == "__main__":
