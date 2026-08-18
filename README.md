@@ -8,18 +8,18 @@ browser downloads before you type a guess.
 ## Usage
 
 ```sh
-./wordle.py
-```
-
-or
-
-```sh
-python3 wordle.py
+./wordle.py            # play today's puzzle
+./wordle.py -k         # play, showing a QWERTY letter tracker each guess
+./wordle.py --hint     # print a small hint (first letter, vowel/unique counts) and exit
+./wordle.py --solve    # reveal today's answer and exit (peak cheating)
 ```
 
 You get 6 guesses at the 5-letter word. Each guessed letter is shown on a
 coloured background (no emoji): green = right letter, right spot · yellow =
 right letter, wrong spot · gray = not in the word.
+
+With `-k`/`--keyboard`, a mini QWERTY layout prints after each guess showing
+which letters you've used and their status (unused letters are dimmed).
 
 ## Notes
 
