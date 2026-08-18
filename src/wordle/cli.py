@@ -17,6 +17,8 @@ import urllib.request
 from collections import Counter
 from importlib import resources
 
+from wordle import __version__
+
 WORD_LEN = 5
 MAX_GUESSES = 6
 ENDPOINT = "https://www.nytimes.com/svc/wordle/v2/{date}.json"
@@ -266,6 +268,9 @@ def run_practice(code_arg, show_keyboard, words, hard):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="wordle", description="Play the day's NYT Wordle in your terminal."
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
     )
     parser.add_argument(
         "--practice",

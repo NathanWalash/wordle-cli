@@ -1,6 +1,10 @@
 """Tests for wordle-cli scoring and guess validation (no network needed)."""
 
+import pytest
+
+from wordle import __version__
 from wordle.cli import (
+    main,
     score,
     is_valid_guess,
     hard_mode_error,
@@ -13,6 +17,13 @@ from wordle.cli import (
     CODE_ALPHABET,
     CODE_LEN,
 )
+
+
+def test_version_flag_prints_version(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["--version"])
+    assert exc.value.code == 0
+    assert __version__ in capsys.readouterr().out
 
 
 def test_all_correct():
