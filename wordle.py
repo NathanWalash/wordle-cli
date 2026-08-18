@@ -16,17 +16,21 @@ WORD_LEN = 5
 MAX_GUESSES = 6
 ENDPOINT = "https://www.nytimes.com/svc/wordle/v2/{date}.json"
 
-# ANSI colours (bright bg + black text, like the real tiles)
+# ANSI styling.
+RESET = "\033[0m"
+DIM = "\033[2m"
+# Guess-tile feedback colours (bright bg + dark text), like the real tiles.
 GREEN = "\033[42;30m"
 YELLOW = "\033[43;30m"
 GRAY = "\033[100;97m"
-DIM = "\033[2m"
-RESET = "\033[0m"
 BG = {"green": GREEN, "yellow": YELLOW, "gray": GRAY}
+# Keyboard keys: two greys only — used (dark) vs unused (light).
+KEY_USED = "\033[100;97m"   # dark grey bg, light text
+KEY_UNUSED = "\033[47;30m"  # light grey bg, dark text
 
-# For merging a letter's best-known status onto the keyboard.
-RANK = {"gray": 1, "yellow": 2, "green": 3}
+CLEAR = "\033[2J\033[3J\033[H"
 KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm")
+KEYBOARD_INDENT = ("", " ", "   ")  # staggered like a real keyboard
 
 
 def fetch_solution(date):
@@ -60,30 +64,40 @@ def score(guess, solution):
     return result
 
 
-def render(guess, marks):
-    tiles = [f"{BG[m]} {ch.upper()} {RESET}" for ch, m in zip(guess, marks)]
-    return "".join(tiles)
+def render_guess(guess, marks):
+    return "".join(f"{BG[m]} {ch.upper()} {RESET}" for ch, m in zip(guess, marks))
 
 
-def update_keyboard(state, guess, marks):
-    """Keep each letter's best-known status (green > yellow > gray)."""
-    for ch, m in zip(guess, marks):
-        if RANK[m] > RANK.get(state.get(ch, ""), 0):
-            state[ch] = m
+def empty_row():
+    return "".join(f"{DIM} · {RESET}" for _ in range(WORD_LEN))
 
 
-def render_keyboard(state):
+def keyboard_lines(used):
+    """Three staggered rows; used letters dark grey, unused light grey."""
     lines = []
-    for indent, row in enumerate(KEYBOARD_ROWS):
-        keys = []
-        for ch in row:
-            status = state.get(ch)
-            if status:
-                keys.append(f"{BG[status]} {ch.upper()} {RESET}")
-            else:
-                keys.append(f"{DIM} {ch.upper()} {RESET}")
-        lines.append(("  " * indent) + "".join(keys))
-    return "\n".join(lines)
+    for indent, row in zip(KEYBOARD_INDENT, KEYBOARD_ROWS):
+        keys = "".join(
+            f"{KEY_USED if ch in used else KEY_UNUSED} {ch.upper()} {RESET}"
+            for ch in row
+        )
+        lines.append(indent + keys)
+    return lines
+
+
+def draw(history, used, show_keyboard, date):
+    """Redraw the whole board, with the keyboard panel to its right."""
+    lines = [CLEAR, f"  Wordle · {date}", ""]
+    kb = keyboard_lines(used) if show_keyboard else []
+    kb_start = (MAX_GUESSES - len(KEYBOARD_ROWS)) // 2  # vertically centre it
+
+    for r in range(MAX_GUESSES):
+        left = render_guess(*history[r]) if r < len(history) else empty_row()
+        right = ""
+        if show_keyboard and 0 <= r - kb_start < len(kb):
+            right = "    " + kb[r - kb_start]
+        lines.append(("  " + left + right).rstrip())
+
+    print("\n".join(lines) + "\n")
 
 
 def make_hint(solution):
@@ -96,33 +110,38 @@ def make_hint(solution):
 
 
 def play(solution, date, show_keyboard):
-    print(f"Wordle — {date}.  {MAX_GUESSES} guesses, {WORD_LEN} letters.\n")
-    keyboard = {}
+    history = []       # list of (guess, marks)
+    used = set()       # letters guessed so far
+    notice = ""
 
-    for attempt in range(1, MAX_GUESSES + 1):
-        while True:
-            try:
-                guess = input(f"[{attempt}/{MAX_GUESSES}] > ").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                print("\nBye!")
-                return 0
-            if len(guess) != WORD_LEN or not guess.isalpha():
-                print(f"  ...enter a {WORD_LEN}-letter word.")
-                continue
-            break
+    while len(history) < MAX_GUESSES:
+        draw(history, used, show_keyboard, date)
+        if notice:
+            print(f"  {notice}")
+            notice = ""
 
-        marks = score(guess, solution)
-        print("  " + render(guess, marks))
-
-        if show_keyboard:
-            update_keyboard(keyboard, guess, marks)
-            print(render_keyboard(keyboard) + "\n")
-
-        if guess == solution:
-            print(f"\n Got it in {attempt}! ")
+        attempt = len(history) + 1
+        try:
+            guess = input(f"  [{attempt}/{MAX_GUESSES}] > ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\n  Bye!")
             return 0
 
-    print(f"\nOut of guesses. The word was: {solution.upper()}")
+        if len(guess) != WORD_LEN or not guess.isalpha():
+            notice = f"...enter a {WORD_LEN}-letter word."
+            continue
+
+        marks = score(guess, solution)
+        history.append((guess, marks))
+        used.update(guess)
+
+        if guess == solution:
+            draw(history, used, show_keyboard, date)
+            print(f"  Got it in {len(history)}! ")
+            return 0
+
+    draw(history, used, show_keyboard, date)
+    print(f"  Out of guesses. The word was: {solution.upper()}")
     return 0
 
 
@@ -135,10 +154,10 @@ def main():
         "--hint", action="store_true", help="print a small hint and exit"
     )
     parser.add_argument(
-        "-k",
-        "--keyboard",
+        "-n",
+        "--no-keyboard",
         action="store_true",
-        help="show a QWERTY tracker of used/unused letters after each guess",
+        help="hide the QWERTY letter tracker (shown by default)",
     )
     args = parser.parse_args()
 
@@ -156,7 +175,7 @@ def main():
         print(make_hint(solution))
         return 0
 
-    return play(solution, date, show_keyboard=args.keyboard)
+    return play(solution, date, show_keyboard=not args.no_keyboard)
 
 
 if __name__ == "__main__":
