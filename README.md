@@ -17,8 +17,9 @@ or
 python3 wordle.py
 ```
 
-You get 6 guesses at the 5-letter word. Tiles are coloured like the real game:
-🟩 right letter, right spot · 🟨 right letter, wrong spot · ⬛ not in the word.
+You get 6 guesses at the 5-letter word. Each guessed letter is shown on a
+coloured background (no emoji): green = right letter, right spot · yellow =
+right letter, wrong spot · gray = not in the word.
 
 ## Notes
 
