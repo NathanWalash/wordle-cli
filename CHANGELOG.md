@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org).
 
+## [1.1.0] — 2026-08-18
+
+### Added
+- **Hard mode** (`--hard`): revealed greens must stay in place and revealed
+  yellows must be reused in later guesses.
+- **Shareable result grid** printed after each game, in the familiar copy-paste
+  format (`Wordle 1,234 4/6` plus the emoji squares).
+- Published to PyPI as `nyt-wordle-cli` (`pip install nyt-wordle-cli`).
+
+### Changed
+- Professional README with a centred banner and expanded documentation.
+
 ## [1.0.0] — 2026-08-18
 
 First release.
@@ -19,4 +31,5 @@ First release.
 - Installable as a `wordle` command via `pipx` / `pip`.
 - Test suite and GitHub Actions CI across Python 3.9–3.12.
 
+[1.1.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.1.0
 [1.0.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.0.0

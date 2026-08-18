@@ -3,6 +3,8 @@
 from wordle.cli import (
     score,
     is_valid_guess,
+    hard_mode_error,
+    share_grid,
     load_words,
     load_answers,
     normalize_code,
@@ -100,3 +102,40 @@ def test_answers_list_loads():
     assert answers is not None
     assert "crane" in answers
     assert answers == sorted(answers)  # stable order for deterministic codes
+
+
+# --- hard mode ---
+
+# After guessing "brick" vs "crane": r is green at index 1, c is present.
+HARD_HISTORY = [("brick", ["gray", "green", "gray", "yellow", "gray"])]
+
+
+def test_hard_mode_no_history_is_ok():
+    assert hard_mode_error("crane", []) is None
+
+
+def test_hard_mode_enforces_green_position():
+    assert "2nd letter must be R" in hard_mode_error("plumb", HARD_HISTORY)
+
+
+def test_hard_mode_enforces_present_letter():
+    # 'r' is in place but the required 'c' is missing.
+    assert "must use C" in hard_mode_error("trade", HARD_HISTORY)
+
+
+def test_hard_mode_accepts_conforming_guess():
+    assert hard_mode_error("crane", HARD_HISTORY) is None
+
+
+# --- shareable result grid ---
+
+def test_share_grid_win_shows_count_and_squares():
+    grid = share_grid([("crane", ["green"] * 5)], "crane", "1,234")
+    assert grid.startswith("Wordle 1,234 1/6")
+    assert "\U0001f7e9\U0001f7e9\U0001f7e9\U0001f7e9\U0001f7e9" in grid
+
+
+def test_share_grid_loss_uses_x():
+    history = [("brick", ["gray", "green", "gray", "yellow", "gray"])] * 6
+    grid = share_grid(history, "crane", "Practice ABC234")
+    assert "X/6" in grid

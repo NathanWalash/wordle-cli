@@ -36,10 +36,14 @@ BG = {"green": GREEN, "yellow": YELLOW, "gray": GRAY}
 # Keyboard keys: two greys only — used (dark) vs unused (light).
 KEY_USED = "\033[100;97m"
 KEY_UNUSED = "\033[47;30m"
+# The one place emoji are used: the copy-paste result grid, so it matches the
+# format everyone recognises when shared into a chat.
+SQUARES = {"green": "\U0001f7e9", "yellow": "\U0001f7e8", "gray": "⬛"}
 
 CLEAR = "\033[2J\033[3J\033[H"
 KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm")
 KEYBOARD_INDENT = ("", " ", "   ")  # staggered like a real keyboard
+ORDINALS = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th"}
 
 
 def _load_list(filename):
@@ -77,13 +81,13 @@ def word_from_code(code, answers):
     return answers[int(digest, 16) % len(answers)]
 
 
-def fetch_solution(date):
-    """Return the day's five-letter solution, lowercased."""
+def fetch_puzzle(date):
+    """Return (solution, puzzle_number) for the given date."""
     url = ENDPOINT.format(date=date)
     req = urllib.request.Request(url, headers={"User-Agent": "wordle-cli"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         data = json.load(resp)
-    return data["solution"].lower()
+    return data["solution"].lower(), data.get("days_since_launch")
 
 
 def score(guess, solution):
@@ -115,6 +119,27 @@ def is_valid_guess(guess, words, solution):
     if words is None:
         return True  # no word list available -> accept any 5-letter word
     return guess in words or guess == solution
+
+
+def hard_mode_error(guess, history):
+    """Return an error message if the guess ignores revealed hints, else None."""
+    greens = {}       # position -> letter that must stay put
+    required = set()  # letters revealed present that must be reused
+    for past, marks in history:
+        for i, (ch, m) in enumerate(zip(past, marks)):
+            if m == "green":
+                greens[i] = ch
+                required.add(ch)
+            elif m == "yellow":
+                required.add(ch)
+
+    for i, ch in sorted(greens.items()):
+        if guess[i] != ch:
+            return f"hard mode: {ORDINALS[i + 1]} letter must be {ch.upper()}."
+    for ch in sorted(required):
+        if ch not in guess:
+            return f"hard mode: guess must use {ch.upper()}."
+    return None
 
 
 def render_guess(guess, marks):
@@ -162,13 +187,24 @@ def make_hint(solution):
     )
 
 
-def play(solution, header, show_keyboard, words):
+def share_grid(history, solution, label):
+    """Build the copy-paste emoji result grid, in the familiar Wordle format."""
+    solved = bool(history) and history[-1][0] == solution
+    count = len(history) if solved else "X"
+    rows = "\n".join("".join(SQUARES[m] for m in marks) for _, marks in history)
+    return f"Wordle {label} {count}/{MAX_GUESSES}\n\n{rows}"
+
+
+def play(solution, header, show_keyboard, words, hard, share_label):
     history = []       # list of (guess, marks)
     used = set()       # letters guessed so far
     notice = ""
+    solved = False
 
     while len(history) < MAX_GUESSES:
         draw(history, used, show_keyboard, header)
+        if hard:
+            print("  hard mode")
         if notice:
             print(f"  {notice}")
             notice = ""
@@ -186,22 +222,30 @@ def play(solution, header, show_keyboard, words):
         if not is_valid_guess(guess, words, solution):
             notice = f"...'{guess}' is not in the word list."
             continue
+        if hard:
+            err = hard_mode_error(guess, history)
+            if err:
+                notice = "..." + err
+                continue
 
         marks = score(guess, solution)
         history.append((guess, marks))
         used.update(guess)
-
         if guess == solution:
-            draw(history, used, show_keyboard, header)
-            print(f"  Got it in {len(history)}! ")
-            return 0
+            solved = True
+            break
 
     draw(history, used, show_keyboard, header)
-    print(f"  Out of guesses. The word was: {solution.upper()}")
+    if solved:
+        print(f"  Got it in {len(history)}! ")
+    else:
+        print(f"  Out of guesses. The word was: {solution.upper()}")
+    if history:
+        print("\n" + share_grid(history, solution, share_label))
     return 0
 
 
-def run_practice(code_arg, show_keyboard, words):
+def run_practice(code_arg, show_keyboard, words, hard):
     answers = load_answers()
     if not answers:
         print("No word list available for practice.", file=sys.stderr)
@@ -213,7 +257,10 @@ def run_practice(code_arg, show_keyboard, words):
 
     solution = word_from_code(code, answers)
     print(f"\n  Practice — share this code so others get the same word:  {code}\n")
-    return play(solution, f"Practice · {code}", show_keyboard, words)
+    return play(
+        solution, f"Practice · {code}", show_keyboard, words,
+        hard=hard, share_label=f"Practice {code}",
+    )
 
 
 def main(argv=None):
@@ -228,6 +275,11 @@ def main(argv=None):
         metavar="CODE",
         help="play an offline word; pass a shared CODE to match a friend, "
         "or omit it to get a new code to share",
+    )
+    parser.add_argument(
+        "--hard",
+        action="store_true",
+        help="hard mode: revealed hints must be reused in later guesses",
     )
     parser.add_argument(
         "--solve", action="store_true", help="reveal today's answer and exit"
@@ -245,11 +297,11 @@ def main(argv=None):
     show_keyboard = not args.no_keyboard
 
     if args.practice is not None:
-        return run_practice(args.practice, show_keyboard, load_words())
+        return run_practice(args.practice, show_keyboard, load_words(), args.hard)
 
     date = datetime.date.today().isoformat()
     try:
-        solution = fetch_solution(date)
+        solution, number = fetch_puzzle(date)
     except Exception as exc:  # network / parsing issues
         print(f"Couldn't fetch today's word: {exc}", file=sys.stderr)
         return 1
@@ -261,7 +313,11 @@ def main(argv=None):
         print(make_hint(solution))
         return 0
 
-    return play(solution, f"Wordle · {date}", show_keyboard, load_words())
+    label = f"{number:,}" if number else date
+    return play(
+        solution, f"Wordle · {date}", show_keyboard, load_words(),
+        hard=args.hard, share_label=label,
+    )
 
 
 if __name__ == "__main__":

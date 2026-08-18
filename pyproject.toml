@@ -3,8 +3,8 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wordle-cli"
-version = "1.0.0"
+name = "nyt-wordle-cli"
+version = "1.1.0"
 description = "Play the day's NYT Wordle in your terminal — no browser, no dependencies."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -17,11 +17,17 @@ classifiers = [
     "Topic :: Games/Entertainment :: Puzzle Games",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [project.scripts]
 wordle = "wordle.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/NathanWalash/wordle-cli"
+Repository = "https://github.com/NathanWalash/wordle-cli"
+Changelog = "https://github.com/NathanWalash/wordle-cli/blob/main/CHANGELOG.md"
+Issues = "https://github.com/NathanWalash/wordle-cli/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
