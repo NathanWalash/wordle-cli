@@ -85,8 +85,10 @@ wordle --solve               # reveal today's answer, then exit
 | `--practice [CODE]` | Play offline; share the printed code, or pass a friend's code |
 | `--hard` | Revealed greens must stay in place and yellows must be reused |
 | `-n`, `--no-keyboard` | Hide the letter tracker |
+| `--no-color` | Disable colour (also honours the `NO_COLOR` env var) |
 | `--hint` | First letter plus vowel and unique-letter counts, then exit |
 | `--solve` | Print the answer and exit |
+| `--version` | Print the version and exit |
 
 ## Play with a friend
 

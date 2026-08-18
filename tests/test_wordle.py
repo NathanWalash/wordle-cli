@@ -9,6 +9,9 @@ from wordle.cli import (
     is_valid_guess,
     hard_mode_error,
     share_grid,
+    make_style,
+    render_guess,
+    color_disabled,
     load_words,
     load_answers,
     normalize_code,
@@ -150,3 +153,27 @@ def test_share_grid_loss_uses_x():
     history = [("brick", ["gray", "green", "gray", "yellow", "gray"])] * 6
     grid = share_grid(history, "crane", "Practice ABC234")
     assert "X/6" in grid
+
+
+# --- colour / no-colour ---
+
+def test_colour_tiles_contain_ansi():
+    line = render_guess("crane", ["green"] * 5, make_style(no_color=False))
+    assert "\033[" in line
+
+
+def test_plain_tiles_have_no_ansi_and_use_shapes():
+    line = render_guess("crane", ["green", "yellow", "gray", "gray", "green"],
+                        make_style(no_color=True))
+    assert "\033[" not in line
+    assert "[C]" in line   # green -> brackets
+    assert "(R)" in line   # yellow -> parens
+
+
+def test_color_disabled_by_flag():
+    assert color_disabled(True) is True
+
+
+def test_color_disabled_by_env(monkeypatch):
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert color_disabled(False) is True

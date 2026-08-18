@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org).
 
+## [1.3.0] — 2026-08-18
+
+### Added
+- `--no-color` flag, plus support for the `NO_COLOR` environment variable and
+  automatic colour-off when output is not a terminal. A plain, ANSI-free board
+  renders with `[x]` / `(x)` / `x` tile shapes.
+
 ## [1.2.0] — 2026-08-18
 
 ### Added
@@ -36,6 +43,7 @@ First release.
 - Installable as a `wordle` command via `pipx` / `pip`.
 - Test suite and GitHub Actions CI across Python 3.9–3.12.
 
+[1.3.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.3.0
 [1.2.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.2.0
 [1.1.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.1.0
 [1.0.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.0.0

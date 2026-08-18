@@ -11,6 +11,7 @@ import argparse
 import datetime
 import hashlib
 import json
+import os
 import random
 import sys
 import urllib.request
@@ -144,34 +145,69 @@ def hard_mode_error(guess, history):
     return None
 
 
-def render_guess(guess, marks):
-    return "".join(f"{BG[m]} {ch.upper()} {RESET}" for ch, m in zip(guess, marks))
+# Plain (no-colour) tile shapes, kept to the same 3-char width as coloured tiles.
+PLAIN_TILE = {"green": "[{c}]", "yellow": "({c})", "gray": " {c} "}
 
 
-def empty_row():
-    return "".join(f"{DIM} · {RESET}" for _ in range(WORD_LEN))
+def color_disabled(flag):
+    """True if colour should be off: --no-color, NO_COLOR env, or non-tty output."""
+    if flag:
+        return True
+    if os.environ.get("NO_COLOR"):
+        return True
+    return not sys.stdout.isatty()
 
 
-def keyboard_lines(used):
-    """Three staggered rows; used letters dark grey, unused light grey."""
+def make_style(no_color):
+    return {"plain": no_color, "bg": dict(BG)}
+
+
+def tile(ch, mark, style):
+    C = ch.upper()
+    if style["plain"]:
+        return PLAIN_TILE[mark].format(c=C)
+    return f"{style['bg'][mark]} {C} {RESET}"
+
+
+def key_cap(ch, used, style):
+    if style["plain"]:
+        return f"-{ch.lower()}-" if used else f" {ch.upper()} "
+    bg = KEY_USED if used else KEY_UNUSED
+    return f"{bg} {ch.upper()} {RESET}"
+
+
+def render_guess(guess, marks, style):
+    return "".join(tile(ch, m, style) for ch, m in zip(guess, marks))
+
+
+def empty_row(style):
+    cell = " · " if style["plain"] else f"{DIM} · {RESET}"
+    return cell * WORD_LEN
+
+
+def keyboard_lines(used, style):
+    """Three staggered rows; used letters marked, unused plain."""
     lines = []
     for indent, row in zip(KEYBOARD_INDENT, KEYBOARD_ROWS):
-        keys = "".join(
-            f"{KEY_USED if ch in used else KEY_UNUSED} {ch.upper()} {RESET}"
-            for ch in row
-        )
+        keys = "".join(key_cap(ch, ch in used, style) for ch in row)
         lines.append(indent + keys)
     return lines
 
 
-def draw(history, used, show_keyboard, header):
+def draw(history, used, show_keyboard, header, style):
     """Redraw the whole board, with the keyboard panel to its right."""
     lines = [CLEAR, f"  {header}", ""]
-    kb = keyboard_lines(used) if show_keyboard else []
+    if style["plain"]:
+        lines.append("  legend  [x] right  (x) present  x absent  -x- used key")
+        lines.append("")
+    kb = keyboard_lines(used, style) if show_keyboard else []
     kb_start = (MAX_GUESSES - len(KEYBOARD_ROWS)) // 2  # vertically centre it
 
     for r in range(MAX_GUESSES):
-        left = render_guess(*history[r]) if r < len(history) else empty_row()
+        if r < len(history):
+            left = render_guess(history[r][0], history[r][1], style)
+        else:
+            left = empty_row(style)
         right = ""
         if show_keyboard and 0 <= r - kb_start < len(kb):
             right = "    " + kb[r - kb_start]
@@ -197,14 +233,14 @@ def share_grid(history, solution, label):
     return f"Wordle {label} {count}/{MAX_GUESSES}\n\n{rows}"
 
 
-def play(solution, header, show_keyboard, words, hard, share_label):
+def play(solution, header, show_keyboard, words, hard, share_label, style):
     history = []       # list of (guess, marks)
     used = set()       # letters guessed so far
     notice = ""
     solved = False
 
     while len(history) < MAX_GUESSES:
-        draw(history, used, show_keyboard, header)
+        draw(history, used, show_keyboard, header, style)
         if hard:
             print("  hard mode")
         if notice:
@@ -237,7 +273,7 @@ def play(solution, header, show_keyboard, words, hard, share_label):
             solved = True
             break
 
-    draw(history, used, show_keyboard, header)
+    draw(history, used, show_keyboard, header, style)
     if solved:
         print(f"  Got it in {len(history)}! ")
     else:
@@ -247,7 +283,7 @@ def play(solution, header, show_keyboard, words, hard, share_label):
     return 0
 
 
-def run_practice(code_arg, show_keyboard, words, hard):
+def run_practice(code_arg, show_keyboard, words, hard, style):
     answers = load_answers()
     if not answers:
         print("No word list available for practice.", file=sys.stderr)
@@ -261,7 +297,7 @@ def run_practice(code_arg, show_keyboard, words, hard):
     print(f"\n  Practice — share this code so others get the same word:  {code}\n")
     return play(
         solution, f"Practice · {code}", show_keyboard, words,
-        hard=hard, share_label=f"Practice {code}",
+        hard=hard, share_label=f"Practice {code}", style=style,
     )
 
 
@@ -298,11 +334,17 @@ def main(argv=None):
         action="store_true",
         help="hide the QWERTY letter tracker (shown by default)",
     )
+    parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="disable colour (also honours the NO_COLOR env var)",
+    )
     args = parser.parse_args(argv)
     show_keyboard = not args.no_keyboard
+    style = make_style(color_disabled(args.no_color))
 
     if args.practice is not None:
-        return run_practice(args.practice, show_keyboard, load_words(), args.hard)
+        return run_practice(args.practice, show_keyboard, load_words(), args.hard, style)
 
     date = datetime.date.today().isoformat()
     try:
@@ -321,7 +363,7 @@ def main(argv=None):
     label = f"{number:,}" if number else date
     return play(
         solution, f"Wordle · {date}", show_keyboard, load_words(),
-        hard=args.hard, share_label=label,
+        hard=args.hard, share_label=label, style=style,
     )
 
 
