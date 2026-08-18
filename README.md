@@ -41,11 +41,14 @@ light for unused letters, dark for ones you've tried.
 ## Features
 
 - Plays **today's real Wordle** — the answer is read from NYT's public puzzle feed.
+- **Play any past puzzle** from the archive with `--date`.
 - **Practice mode with shareable codes** so friends can race on the same word.
 - **Hard mode** — revealed hints must be reused in later guesses.
 - Live **QWERTY tracker** beside the board.
 - **Real-word validation** against a bundled list of ~15,000 words.
 - **Shareable result grid** in the familiar copy-paste format.
+- **Accessible** — colourblind (blue/orange) and no-colour modes, plus `NO_COLOR` support.
+- **Configurable defaults** via a simple config file.
 - Clean ANSI colours, and **zero dependencies** — pure Python standard library.
 
 ## Installation

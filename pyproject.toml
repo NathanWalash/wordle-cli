@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nyt-wordle-cli"
-version = "1.6.0"
+version = "1.6.1"
 description = "Play the day's NYT Wordle in your terminal — no browser, no dependencies."
 readme = "README.md"
 requires-python = ">=3.9"

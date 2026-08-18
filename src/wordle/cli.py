@@ -293,6 +293,8 @@ def share_grid(history, solution, label):
 
 
 def play(solution, header, show_keyboard, words, hard, share_label, style):
+    if hard:
+        header = f"{header}  ·  hard mode"
     history = []       # list of (guess, marks)
     used = set()       # letters guessed so far
     notice = ""
@@ -300,8 +302,6 @@ def play(solution, header, show_keyboard, words, hard, share_label, style):
 
     while len(history) < MAX_GUESSES:
         draw(history, used, show_keyboard, header, style)
-        if hard:
-            print("  hard mode")
         if notice:
             print(f"  {notice}")
             notice = ""

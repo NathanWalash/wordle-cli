@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org).
 
+## [1.6.1] — 2026-08-18
+
+### Changed
+- Hard mode is now shown in the board header instead of a separate line.
+- Expanded the README feature list (archive, accessibility, config).
+
 ## [1.6.0] — 2026-08-18
 
 ### Added
@@ -61,6 +67,7 @@ First release.
 - Installable as a `wordle` command via `pipx` / `pip`.
 - Test suite and GitHub Actions CI across Python 3.9–3.12.
 
+[1.6.1]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.6.1
 [1.6.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.6.0
 [1.5.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.5.0
 [1.4.0]: https://github.com/NathanWalash/wordle-cli/releases/tag/v1.4.0
